@@ -1,0 +1,25 @@
+{
+  "server": {
+    "host": "localhost",
+    "port": 25565,
+    "version": false
+  },
+  "bot": {
+    "username": "Bondhu_Steve",
+    "auth": "offline"
+  },
+  "master": {
+    "username": "Rahad",
+    "maxFollowDistance": 30,
+    "comfortDistance": 4
+  },
+  "features": {
+    "autoDefendMaster": true,
+    "autoSleepAtNight": true,
+    "autoEat": true,
+    "autoEquipArmor": true,
+    "autoMineOres": true,
+    "autoBuildShelter": true,
+    "autoFarm": true
+  }
+}
