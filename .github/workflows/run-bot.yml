@@ -1,33 +1,16 @@
 name: 🎮 Run Autonomous Minecraft Companion Bot
 
+# এখন থেকে কোড সেভ করলেই অটো চালু হবে, আবার চাইলে ম্যানুয়ালিও রান করতে পারবেন
 on:
+  push:
+    branches: [ "main", "master" ]
   workflow_dispatch:
-    inputs:
-      server_ip:
-        description: 'Minecraft Server IP (Host)'
-        required: true
-        default: 'play.aternos.me'
-      server_port:
-        description: 'Server Port (Default: 25565)'
-        required: true
-        default: '25565'
-      master_username:
-        description: 'Your Minecraft In-Game Name (Master)'
-        required: true
-        default: 'Rayhan'
-      bot_name:
-        description: 'Bot Nickname'
-        required: true
-        default: 'Bondhu_Steve'
-  # প্রতিদিন বা প্রয়োজনে নির্দিষ্ট সময়ে অটোমেটিক চালুর জন্য (ঐচ্ছিক):
-  # schedule:
-  #   - cron: '0 */5 * * *'
 
 jobs:
   run-companion-bot:
     name: 🚀 Launching Bot in Cloud
     runs-on: ubuntu-latest
-    timeout-minutes: 350 # GitHub Actions এক নাগাড়ে সর্বোচ্চ প্রায় ৬ ঘণ্টা পর্যন্ত চলে
+    timeout-minutes: 350
 
     steps:
       - name: 📥 Repository Code Checkout
@@ -43,31 +26,7 @@ jobs:
         run: |
           npm install
 
-      - name: ⚙️ Update Config dynamically from Inputs
-        run: |
-          node -e "
-            const fs = require('fs');
-            let config = {};
-            try {
-              config = JSON.parse(fs.readFileSync('./config.json', 'utf8'));
-            } catch(e) { config = {}; }
-
-            config.server = config.server || {};
-            config.bot = config.bot || {};
-            config.master = config.master || {};
-
-            // GitHub Action Inputs থেকে ভ্যালু সেট করা
-            config.server.host = '${{ github.event.inputs.server_ip }}' || config.server.host || 'localhost';
-            config.server.port = parseInt('${{ github.event.inputs.server_port }}') || config.server.port || 25565;
-            config.master.username = '${{ github.event.inputs.master_username }}' || config.master.username || 'Rayhan';
-            config.bot.username = '${{ github.event.inputs.bot_name }}' || config.bot.username || 'Bondhu_Steve';
-
-            fs.writeFileSync('./config.json', JSON.stringify(config, null, 2));
-            console.log('✅ Updated config.json with current server details:');
-            console.log(JSON.stringify(config, null, 2));
-          "
-
       - name: 🤖 Start Minecraft Companion Bot
         run: |
-          echo "🚀 Bot is starting on cloud runner..."
+          echo "🚀 Bot is connecting to server from config.json..."
           node index.js
