@@ -1,6 +1,5 @@
 name: 🎮 Run Autonomous Minecraft Companion Bot
 
-# এখন থেকে কোড সেভ করলেই অটো চালু হবে, আবার চাইলে ম্যানুয়ালিও রান করতে পারবেন
 on:
   push:
     branches: [ "main", "master" ]
@@ -20,7 +19,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'npm'
 
       - name: 📦 Install Bot Dependencies
         run: |
