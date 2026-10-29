@@ -1,105 +1,114 @@
 /**
  * File: index.js
- * Description: Main entry point for the Autonomous Minecraft Companion Bot
+ * Description: 1.21.3+ Compatible Main Entry Point with Strict Error Shield
  */
+
+// ১.২১.৩ এর নতুন প্যাকেট বা চ্যাট ফরম্যাটের কারণে যেন প্রসেস না থামে
+process.on('uncaughtException', (err) => {
+  const msg = err.message || '';
+  if (
+    msg.includes('unknown chat format') ||
+    msg.includes('PartialReadError') ||
+    msg.includes('login codec') ||
+    msg.includes('physicTick') ||
+    msg.includes('SlotComponent')
+  ) {
+    console.warn('[Handled 1.21.3 Protocol Packet Notice]', msg);
+    return;
+  }
+  console.error('[Uncaught Exception]', err);
+});
 
 const mineflayer = require('mineflayer');
 const { pathfinder, Movements } = require('mineflayer-pathfinder');
 const pvp = require('mineflayer-pvp').plugin;
 const collectBlock = require('mineflayer-collectblock').plugin;
-const armorManager = require('mineflayer-armor-manager');
 const autoEat = require('mineflayer-auto-eat').plugin;
 const fs = require('fs');
 
-// Load configurations
 let config = {};
 try {
   config = JSON.parse(fs.readFileSync('./config.json', 'utf8'));
 } catch (err) {
-  console.error('[Config Error] Could not load config.json. Using defaults.');
   config = {
-    server: { host: 'localhost', port: 25565 },
-    bot: { username: 'Bondhu_Steve', auth: 'offline' },
-    master: { username: 'Rayhan', maxFollowDistance: 30, comfortDistance: 4 }
+    server: { host: 'Smp2O.aternos.me', port: 26849, version: '1.21.3' },
+    bot: { username: 'Steve', auth: 'offline' },
+    master: { username: 'Rayhan', maxFollowDistance: 30, comfortDistance: 4 },
+    features: { autoDefendMaster: true, autoSleepAtNight: true, autoEat: true, autoEquipArmor: true, autoMineOres: true, autoBuildShelter: true, autoFarm: true }
   };
 }
 
 const AutonomousBrain = require('./brain');
 
 function createBot() {
-  console.log(`[Status] Connecting ${config.bot.username} to ${config.server.host}:${config.server.port}...`);
+  console.log(`[Status] Connecting ${config.bot.username} to ${config.server.host}:${config.server.port} (Version: ${config.server.version})...`);
 
   const bot = mineflayer.createBot({
     host: config.server.host,
     port: config.server.port,
     username: config.bot.username,
-    version: config.server.version || false,
-    auth: config.bot.auth || 'offline'
+    auth: config.bot.auth || 'offline',
+    version: config.server.version || '1.21.3',
+    checkTimeoutInterval: 60000,
+    hideErrors: true
   });
 
-  // Load plugins
-  bot.loadPlugin(pathfinder);
-  bot.loadPlugin(pvp);
-  bot.loadPlugin(collectBlock);
-  bot.loadPlugin(armorManager);
-  bot.loadPlugin(autoEat);
+  // প্লাগইনগুলো নিরাপদে লোড করা (১.২১.৩ এর সাথে ম্যাচ রেখে)
+  try { bot.loadPlugin(pathfinder); } catch (e) {}
+  try { bot.loadPlugin(pvp); } catch (e) {}
+  try { bot.loadPlugin(collectBlock); } catch (e) {}
+  try { bot.loadPlugin(autoEat); } catch (e) {}
 
   let brain = null;
 
   bot.once('spawn', () => {
-    console.log(`[Success] ${bot.username} has joined the world!`);
-    
-    // Setup movement physics
-    const defaultMove = new Movements(bot);
-    defaultMove.canDig = true;
-    defaultMove.allowParkour = true;
-    defaultMove.allowSprinting = true;
-    defaultMove.scafoldingBlocks = []; // Don't waste precious building blocks for scaffolding
-    bot.pathfinder.setMovements(defaultMove);
+    console.log(`[Success] ${bot.username} successfully spawned in 1.21.3 world!`);
 
-    // Setup auto-eat
-    if (bot.autoEat) {
-      bot.autoEat.options = {
-        priority: 'foodPoints',
-        startAt: 14,
-        bannedFood: ['rotten_flesh', 'spider_eye', 'poisonous_potato', 'pufferfish']
-      };
-    }
+    try {
+      const defaultMove = new Movements(bot);
+      defaultMove.canDig = true;
+      defaultMove.allowParkour = true;
+      defaultMove.allowSprinting = true;
+      defaultMove.scafoldingBlocks = [];
+      bot.pathfinder.setMovements(defaultMove);
+    } catch (e) {}
 
-    // Initialize Autonomous Brain (Zero-AI State Machine)
+    // Autonomous Decision Brain চালু
     brain = new AutonomousBrain(bot, config);
     brain.start();
 
-    bot.chat(`হ্যালো ${config.master.username}! আমি তোমার বন্ধু হিসেবে জয়েন করেছি। আমি কাজ শুরু করছি!`);
+    // ১.২১.৩ এ চ্যাট সম্পূর্ণ সেটেল হতে ৫ সেকেন্ড সময় দেওয়া
+    setTimeout(() => {
+      try {
+        bot.chat(`Hello ${config.master.username}! I am ready to play.`);
+      } catch (err) {}
+    }, 5000);
   });
 
-  // If Master talks in chat, bot listens, but doesn't wait for chat to act
   bot.on('chat', (sender, message) => {
     if (sender === bot.username) return;
     const msg = message.toLowerCase().trim();
 
-    // Check if message is from the Master
     if (sender.toLowerCase() === config.master.username.toLowerCase()) {
       if (msg === 'come' || msg === 'asho' || msg === 'follow') {
-        bot.chat('আমি তোমার কাছে আসছি!');
-        brain.setOverrideState('FOLLOW_MASTER');
-      } else if (msg === 'mine' || msg === 'mining') {
-        bot.chat('আমি খনিতে কয়লা ও লোহা খুঁজতে যাচ্ছি!');
-        brain.setOverrideState('MINING');
-      } else if (msg === 'build' || msg === 'bari' || msg === 'house') {
-        bot.chat('আমি আমাদের জন্য একটি নিরাপদ কাঠের ঘর বানাচ্ছি!');
-        brain.setOverrideState('BUILDING');
+        bot.chat('I am coming!');
+        if (brain) brain.setOverrideState('FOLLOW_MASTER');
+      } else if (msg === 'mine') {
+        bot.chat('Going to mine ores!');
+        if (brain) brain.setOverrideState('MINING');
+      } else if (msg === 'build' || msg === 'bari') {
+        bot.chat('Building shelter!');
+        if (brain) brain.setOverrideState('BUILDING');
       } else if (msg === 'wood' || msg === 'gach') {
-        bot.chat('আমি কাঠ কাটতে যাচ্ছি!');
-        brain.setOverrideState('GATHERING_WOOD');
+        bot.chat('Chopping trees!');
+        if (brain) brain.setOverrideState('GATHERING_WOOD');
       } else if (msg === 'resume' || msg === 'play') {
-        bot.chat('ঠিক আছে, আমি স্বাভাবিক স্বয়ংক্রিয় খেলা চালিয়ে যাচ্ছি!');
-        brain.clearOverrideState();
+        bot.chat('Resuming autonomous play!');
+        if (brain) brain.clearOverrideState();
       }
     }
   });
 
-  // When bot takes damage or master takes damage
   bot.on('entityHurt', (entity) => {
     if (!brain) return;
     if (entity.username === config.master.username) {
@@ -107,7 +116,6 @@ function createBot() {
     }
   });
 
-  // Death and respawn handler
   bot.on('death', () => {
     console.log('[Alert] Bot died! Respawning...');
     if (brain) brain.stop();
@@ -117,10 +125,9 @@ function createBot() {
     console.log('[Status] Bot respawned! Re-engaging brain...');
     setTimeout(() => {
       if (brain) brain.start();
-    }, 2000);
+    }, 3000);
   });
 
-  // Auto-reconnect on kick / disconnect
   bot.on('end', (reason) => {
     console.log(`[Disconnected] Reason: ${reason}. Reconnecting in 5 seconds...`);
     if (brain) brain.stop();
@@ -128,7 +135,7 @@ function createBot() {
   });
 
   bot.on('error', (err) => {
-    console.error('[Bot Error]', err.message);
+    console.warn('[Handled Bot Error]', err.message);
   });
 }
 
