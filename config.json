@@ -2,14 +2,14 @@
   "server": {
     "host": "Smp2O.aternos.me",
     "port": 26849,
-    "version": false
+    "version": "1.21.3"
   },
   "bot": {
     "username": "Steve",
     "auth": "offline"
   },
   "master": {
-    "username": "Rahad",
+    "username": "Rayhan_hossain9",
     "maxFollowDistance": 30,
     "comfortDistance": 4
   },
