@@ -1,6 +1,6 @@
 {
   "server": {
-    "host": "aibot2.minekeep.gg",
+    "host": "aibot2.bedrock.minekeep.gg",
     "port": 19132,
     "version": false
   },
