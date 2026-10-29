@@ -1,7 +1,7 @@
 {
   "server": {
-    "host": "localhost",
-    "port": 25565,
+    "host": "aibot2.minekeep.gg",
+    "port": 19132,
     "version": false
   },
   "bot": {
